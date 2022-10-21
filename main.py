@@ -9,4 +9,6 @@ if __name__ == "__main__":
 
     while running:
         print(plateau)
+        print(plateau.joueur_un.possibiliter)
+        print(plateau.joueur_deux.possibiliter)
         x = input()

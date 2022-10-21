@@ -65,6 +65,58 @@ class Plateau:
                                 gain_.append((x + i, y + j))
         return gain_
 
+    def get_possibiliter(self, joueur, gain_):
+        if type(joueur) is not Entiter:
+            raise TypeError("le joueur doit etre de type Entiter")
+        if joueur.type != TypeEntiter.JOUEUR_UN and joueur.type != TypeEntiter.JOUEUR_DEUX:
+            raise ValueError("le joueur doit etre sois JOUEUR_UN sois JOUEUR_DEUX")
+        if type(gain_) is not list:
+            raise TypeError("le gain est une liste")
+        add_ = []
+        aremove_ = []
+        for g in gain_:
+            if type(g) is not tuple:
+                raise TypeError("un element de gain est un tuple")
+            if type(g[0]) is not int or type(g[1]) is not int:
+                raise TypeError("un element de gain est un tuple d'entier")
+            aremove_.append(g)
+            for i in [-1, 0, 1]:
+                if 0 <= g[0] + i < self.colone:
+                    for j in [-1, 0, 1]:
+                        if 0 <= g[1] + j < self.ligne:
+                            if self.__grille[g[0] + i][g[1] + j] == TypeEntiter.VIDE:
+                                add_.append((g[0] + i, g[1] + j))
+        for a in add_:
+            r_it = True
+            for i in [-1, 0, 1]:
+                if 0 <= a[0] + i < self.colone:
+                    for j in [-1, 0, 1]:
+                        if 0 <= a[1] + j < self.ligne:
+                            if self.__grille[a[0] + i][a[1] + j] == joueur.adversaire.type:
+                                r_it = False
+                                break
+                    if not r_it:
+                        break
+            if r_it:
+                aremove_.append(a)
+        return add_, gain_, aremove_
+
+    def jouer(self, joueur, x, y):
+        gain_ = self.get_gain(joueur, x, y)
+
+        if len(gain_) <= 0:
+            return False
+        for (x, y) in gain_:
+            self.__grille[x][y] = joueur.type
+        add_j, rm_j, rm_a = self.get_possibiliter(joueur, gain_)
+        joueur.possibiliter = add_j
+        joueur.remove_possibiliter(rm_j)
+        joueur.taille += len(gain_)
+        joueur.adversaire.remove_possibiliter(rm_j)
+        joueur.adversaire.remove_possibiliter(rm_a)
+        joueur.adversaire.taille -= len(gain_) - 1
+        return True
+
     @property
     def joueur_un(self):
         return self.__joueur_un

@@ -42,12 +42,19 @@ class Entiter:
         if value < 0:
             raise ValueError("le nombre de virus doit etre plus grand ou egale a 0")
         self.__taille = value
+
     @property
     def possibiliter(self):
         return self.__possibiliter
 
     @possibiliter.setter
     def possibiliter(self, value):
+        self.__add_or_remove(value)
+
+    def remove_possibiliter(self, value):
+        self.__add_or_remove(value, True)
+
+    def __add_or_remove(self, value, remove=False):
         if self.type == TypeEntiter.VIDE:
             return
         if type(value) is not list and type(value) is not tuple:
@@ -59,16 +66,25 @@ class Entiter:
                 if type(t[0]) is not int and type(t[1]) is not int:
                     raise TypeError("les element du tuple doivent etre de type entier")
                 if t not in self.__possibiliter:
-                    self.__possibiliter.append(t)
+                    if not remove:
+                        self.__possibiliter.append(t)
+                else:
+                    if remove:
+                        self.__possibiliter.remove(t)
         else:
             if type(value[0]) is not int and type(value[1]) is not int:
                 raise TypeError("les element du tuple doivent etre de type entier")
             if value not in self.__possibiliter:
-                self.__possibiliter.append(value)
+                if not remove:
+                    self.__possibiliter.append(value)
+            else:
+                if remove:
+                    self.__possibiliter.remove(value)
+
 
     def est_une_possibiliter(self, x, y):
         if self.type == TypeEntiter.VIDE:
-            return
+            return False
         if type(x) is not int or type(y) is not int:
             raise TypeError("les coordoner doivent etre de type entier")
         return (x, y) in self.__possibiliter

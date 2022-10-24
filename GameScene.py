@@ -147,7 +147,6 @@ class GameScene(DefaultScene):
                 j = (event.pos[1] - self.__gp[1]) // self.__block[1]
 
                 self.__xy = (i, j)
-
         return True
 
     def dominer(self, i, j):
@@ -163,6 +162,8 @@ class GameScene(DefaultScene):
                 self.__g_player[1], self.__g_player[2] = 130, 464
             else:
                 self.__g_player[1], self.__g_player[2] = 1124, 464
+            return (-1, -1)
+        if not passer and not changer:
             return (-1, -1)
         return (i, j)
 

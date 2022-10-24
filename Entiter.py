@@ -22,7 +22,7 @@ class Entiter:
         self.__possibiliter = []
         self.__adversaire = None
         self.__taille = 0
-        self.__gain = 0
+        self.__gain = []
 
         if type_e == TypeEntiter.JOUEUR_UN:
             if recurs:
@@ -40,7 +40,9 @@ class Entiter:
             entiter.__possibiliter.append((i, j))
         entiter.__adversaire = self.__adversaire
         entiter.__taille = self.__taille
-        entiter.__gain = self.__gain
+        entiter.__gain.clear()
+        for e in self.__gain:
+            entiter.__gain.append((e[0], e[1]))
 
         return entiter
 

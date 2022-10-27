@@ -4,7 +4,7 @@ import pygame
 import pygame.image
 from pygame.locals import *
 
-from Entiter import TypeEntiter, Humain, Ordinateur, Entiter
+from Entiter import TypeEntiter, Humain, Ordinateur
 from Plateau import Plateau
 from Scene import Scene
 from DefaultScene import DefaultScene
@@ -42,13 +42,15 @@ class GameScene(DefaultScene):
         self.__temps["title"] = [pygame.image.load("data/ux/Temps.png").convert_alpha(), 673, 682]
         self.__temps["ecouler"] = self.__recalculate_times(self.__t_passer_s)
         # joueur
-        self.player_graphics = {"left-player": JoueurPanel(2, 6, SceneData.get_left_corner("joueur") is None, 130, 228),
+        self.player_graphics = {"left-player": JoueurPanel(2, 6, SceneData.get_left_corner("joueur") is None, 91, 228),
                                 "rigth-player": JoueurPanel(2, 6, SceneData.get_rigth_corner("joueur") is None, 1124, 228)}
         self.set_player_info()
 
         self.__g_player = [pygame.image.load("data/ux/joueur_actuel.png").convert_alpha(), 130, 464]
 
         self.__xy = (-1, -1)
+
+        self.__finish = GameFinish(0, 0, 0, self.menu, self.recommencer)
 
     def set_player_info(self):
         if SceneData.get_left_corner("joueur") is None:
@@ -84,6 +86,8 @@ class GameScene(DefaultScene):
 
         self.__g_player[1], self.__g_player[2] = 130, 464
 
+        self.__finish = GameFinish(0, 0, 0, self.menu, self.recommencer)
+
     def __recalculate_times(self, temps):
         minutes = f"{temps // 60}"
         minutes = f"{minutes}" if len(minutes) > 1 else f"0{minutes}"
@@ -117,36 +121,59 @@ class GameScene(DefaultScene):
 
         self.fenetre.blit(self.__g_player[0], (self.__g_player[1], self.__g_player[2]))
 
+        self.__finish.draw(self.fenetre)
+
     def update(self, temps):
         DefaultScene.update(self, temps)
-        t = self.__clock.tick()
+        if not self.__finish.is_running():
+            t = self.__clock.tick()
 
-        if self.__xy == (-1, -1) and isinstance(self.__joueur_actuel, Ordinateur):
-            i, j = self.__joueur_actuel.jouer(None, self.__plateau.copy(), self.__joueur_actuel.type)
-            self.__xy = (i, j)
+            if self.__xy == (-1, -1) and isinstance(self.__joueur_actuel, Ordinateur):
+                i, j = self.__joueur_actuel.jouer(None, self.__plateau.copy(), self.__joueur_actuel.type)
+                self.__xy = (i, j)
 
-        self.__t_pose += t
-        if self.__t_pose >= 1000 // 8:
-            self.__t_pose = 0
-            self.__xy = self.dominer(self.__xy[0], self.__xy[1])
+            self.__t_pose += t
+            if self.__t_pose >= 1000 // 8:
+                self.__t_pose = 0
+                self.__xy = self.dominer(self.__xy[0], self.__xy[1])
 
-            if self.__xy == (-1, -1) and self.__plateau.match_terminer():
-                print("terminer")
+                if self.__xy == (-1, -1) and self.__plateau.match_terminer():
+                    gagnant = self.__plateau.avantage()
+                    virus = []
+                    possibiliter = []
+                    images = []
+                    if gagnant.type == TypeEntiter.VIDE:
+                        images.extend([pygame.image.load("data/ux/virus_rouge.png").convert_alpha(),
+                                       pygame.image.load("data/ux/virus_vert.png").convert_alpha()])
+                        virus.extend([self.__plateau.joueur_un.taille, self.__plateau.joueur_deux.taille])
+                        possibiliter.extend(
+                            [len(self.__plateau.joueur_un.possibiliter), len(self.__plateau.joueur_deux.possibiliter)])
+                    else:
+                        if gagnant.type == self.__plateau.joueur_un.type:
+                            images.extend([pygame.image.load("data/ux/virus_rouge.png").convert_alpha()])
+                        else:
+                            images.extend([pygame.image.load("data/ux/virus_vert.png").convert_alpha()])
+                        virus.extend([gagnant.taille, gagnant.adversaire.taille])
+                        possibiliter.extend([len(gagnant.possibiliter), len(gagnant.adversaire.possibiliter)])
+                    self.__finish.running(images, possibiliter, virus, (self.__t_passer + t) // 1000)
 
-        self.__t_passer += t
-        if self.__t_passer_s != self.__t_passer // 1000:
-            self.__t_passer_s = self.__t_passer // 1000
-            self.__temps["ecouler"] = self.__recalculate_times(self.__t_passer_s)
+            self.__t_passer += t
+            if self.__t_passer_s != self.__t_passer // 1000:
+                self.__t_passer_s = self.__t_passer // 1000
+                self.__temps["ecouler"] = self.__recalculate_times(self.__t_passer_s)
+
 
     def event(self, event):
-        DefaultScene.event(self, event)
+        if not self.__finish.is_running():
+            DefaultScene.event(self, event)
+            if self.__xy == (-1, -1) and isinstance(self.__joueur_actuel, Humain):
+                if event.type == MOUSEBUTTONDOWN and event.button == 1:
+                    i = (event.pos[0] - self.__gp[0]) // self.__block[0]
+                    j = (event.pos[1] - self.__gp[1]) // self.__block[1]
 
-        if self.__xy == (-1, -1) and isinstance(self.__joueur_actuel, Humain):
-            if event.type == MOUSEBUTTONDOWN and event.button == 1:
-                i = (event.pos[0] - self.__gp[0]) // self.__block[0]
-                j = (event.pos[1] - self.__gp[1]) // self.__block[1]
-
-                self.__xy = (i, j)
+                    self.__xy = (i, j)
+        else:
+            self.__finish.event(event)
         return True
 
     def dominer(self, i, j):
@@ -181,6 +208,72 @@ class GameScene(DefaultScene):
 
     def recommencer(self):
         self.reinitialiser()
+
+class GameFinish(Widget):
+
+    def __init__(self, virus, poss, humain, menu, recommencer, x=0, y=0):
+        Widget.__init__(self)
+        self.widgets = {"btn-menu": Button("data/ux/btn_menu", None, None, menu, 534, 85),
+                        "btn-recommencer": Button("data/ux/btn_recommencer", None, None, recommencer, 794, 85)}
+
+        self.__running = False
+
+        self.__font = pygame.font.Font("data/fonts/SCRIPTBL.TTF", 40)
+        self.__bg = [pygame.image.load("data/ux/bg_finish.png").convert_alpha(), 372, 182]
+        self.__bg_tr = [pygame.image.load("data/ux/bg_tr.png").convert_alpha(), x, y]
+
+        self.__items = {}
+
+    def draw(self, fenetre):
+        if self.__running:
+            fenetre.blit(self.__bg_tr[0], (self.__bg_tr[1], self.__bg_tr[2]))
+            fenetre.blit(self.__bg[0], (self.__bg[1], self.__bg[2]))
+
+            for key in self.widgets:
+                if self.widgets[key] is not None:
+                    self.widgets[key].draw(fenetre)
+            for key in self.__items:
+                t = self.__items[key]
+                fenetre.blit(t[0], (t[1], t[2]))
+
+    def event(self, event):
+        if self.__running:
+            for key in self.widgets:
+                if self.widgets[key] is not None:
+                    self.widgets[key].event(event)
+
+    def is_running(self):
+        return self.__running
+
+    def running(self, gagnat, possibiliter, virus, temps):
+        self.__running = True
+
+        gnt = "Gagnant" if len(gagnat) == 1 else "Egaliter"
+
+        self.__items.clear()
+        self.__items["gagnant"] = [self.__font.render(gnt, True, (255, 255, 255)), 674, 231]
+
+        if len(gagnat) == 1:
+            self.__items["icon"] = [gagnat[0], 706, 288]
+        else:
+            self.__items["icon-1"] = [gagnat[0], 643, 307]
+            self.__items["icon-2"] = [gagnat[1], 779, 307]
+
+        self.__items["virus"] = [self.__font.render(f"Virus: {virus[0]} contre {virus[1]}", True, (255, 255, 255)), 590,
+                                 423]
+        self.__items["possibiliter"] = [
+            self.__font.render(f"Possibiliter: {possibiliter[0]} contre {possibiliter[1]}", True, (255, 255, 255)), 574,
+            507]
+
+        minutes = f"{temps // 60}"
+        minutes = f"{minutes}" if len(minutes) > 1 else f"0{minutes}"
+        secondes = f"{temps % 60}"
+        secondes = f"{secondes}" if len(secondes) > 1 else f"0{secondes}"
+        self.__items["temps"] = [self.__font.render(f"Temps: {minutes}:{secondes}", True, (255, 255, 255)), 632, 591]
+
+    def update(self, dt):
+        pass
+
 
 class JoueurPanel(Widget):
 

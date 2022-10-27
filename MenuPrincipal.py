@@ -3,10 +3,11 @@
 import pygame.image
 
 from DefaultScene import DefaultScene
-from FirstIA import FirstIA
+#from FirstIA import FirstIA
 from GUI import Button, CheckBox, ListImgChoix, Widget, ListIntChoix, ListStrChoix
 from Scene import Scene
 from SceneData import SceneData
+import Levels
 
 
 class MenuPrincipal(DefaultScene):
@@ -55,12 +56,12 @@ class MenuPrincipal(DefaultScene):
         if self.widgets["left-ordinateur"] is not None:
             SceneData.add_in_left_corner("joueur", {"algo": self.__left_ordinateur.algo,
                                                   "profondeur": self.__left_ordinateur.profondeur,
-                                                  "class": self.__left_ordinateur.class_algo})
+                                                  "class": self.__left_ordinateur.algorithme})
         SceneData.add_in_rigth_corner("joueur", None)
         if self.widgets["right-ordinateur"] is not None:
             SceneData.add_in_rigth_corner("joueur", {"algo": self.__right_ordinateur.algo,
                                                     "profondeur": self.__right_ordinateur.profondeur,
-                                                    "class": self.__right_ordinateur.class_algo})
+                                                    "class": self.__right_ordinateur.algorithme})
         Scene.actual = Scene.get_scene("GameScene")
         Scene.actual.initialiser()
 
@@ -85,19 +86,19 @@ class ComputerPanel(Widget):
     def __init__(self, x=0, y=0):
         Widget.__init__(self)
 
-        self.class_algo = FirstIA()
-        self.algo = "" if len(self.class_algo.list_algo()) <= 0 else self.class_algo.list_algo()[0]
+        self.algorithme = Levels.levels_infos[Levels.levels_actual]
+        self.algo = "" if len(self.algorithme.list_algo()) <= 0 else self.algorithme.list_algo()[0]
         self.profondeur = 0
 
         self.__font = pygame.font.Font("data/fonts/SCRIPTBL.TTF", 18)
 
         self.__titles = {"algo": [pygame.image.load("data/ux/Algorithme.png").convert_alpha(), x + 24, y + 6],
                          "profondeur": [pygame.image.load("data/ux/Profondeur.png").convert_alpha(), x + 24, y + 47],
-                         "fichier": [pygame.image.load("data/ux/Fichier Algo (.py).png").convert_alpha(), x + 24,
+                         "adversaire": [pygame.image.load("data/ux/Adversaire.png").convert_alpha(), x + 24,
                                      y + 93],
-                         "file_py": [self.set_file_name("default_algo.py"), x + 234, y + 100]}
+                         "nom": [self.set_file_name(self.algorithme.nom), x + 234, y + 100]}
         self.widgets = {
-            "algo": ListStrChoix(self.class_algo.list_algo(), self.__algo, "data/ux/alleft_arrow",
+            "algo": ListStrChoix(self.algorithme.list_algo(), self.__algo, "data/ux/alleft_arrow",
                                  "data/ux/alright_arrow", 139, x + 232, y + 14),
             "profondeur": ListIntChoix(0, 100, self.__profondeur,
                                        "data/ux/alleft_arrow", "data/ux/alright_arrow", 139, x + 232, y + 56),
@@ -110,8 +111,8 @@ class ComputerPanel(Widget):
 
     def set_file_name(self, file_name):
         interpret = file_name
-        if len(file_name) > 20:
-            interpret = file_name[0:16]
+        if len(file_name) > 50:
+            interpret = file_name[0:46]
             interpret += "..."
         return self.__font.render(interpret, True, (255, 255, 255))
 

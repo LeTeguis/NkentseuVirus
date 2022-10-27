@@ -6,6 +6,7 @@ class AlgoBase:
 
     def __init__(self):
         self.algos = {}
+        self.nom = ""
 
     def decision_algo(self, joueur, copy_jeu, algo, profondeur):
         if algo not in self.algos and profondeur < 0 and joueur.type == TypeEntiter.VIDE:

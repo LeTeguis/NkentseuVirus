@@ -9,13 +9,13 @@ class FirstIA(AlgoBase):
     def __init__(self):
         AlgoBase.__init__(self)
 
-        self.nom = "Rodofl-Basic"
-
         self.add_algo("mini", self.mini)
         self.add_algo("maxi", self.maxi)
         self.add_algo("minimax", self.minimax)
         self.add_algo("nega-max", self.nega_max)
         self.add_algo("alpha-betha", self.alpha_betha)
+
+        self.nom = "Rodolf-Basic"
 
     def infini(self):
         return 100
